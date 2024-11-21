@@ -21,6 +21,11 @@ const flashcardSchema = new mongoose.Schema({
 // Create Flashcard Model
 const Flashcard = mongoose.model('Flashcard', flashcardSchema);
 
+
+app.get('/', async (req, res) => {
+    res.send("Olá mundo!!");
+});
+
 // Fetch all flashcards
 app.get('/flashcards', async (req, res) => {
   try {
