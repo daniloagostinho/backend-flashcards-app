@@ -12,22 +12,21 @@ mongoose
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('Failed to connect to MongoDB', err));
 
-
-// Definir o esquema do flashcard
+// Define Flashcard Schema
 const flashcardSchema = new mongoose.Schema({
   word: { type: String, required: true },
-  imageUrl: { type: String, required: true }, // Renomeado para imageUrl
+  iconUrl: { type: String, required: true },
 });
 
-// Criar modelo de flashcard
+// Create Flashcard Model
 const Flashcard = mongoose.model('Flashcard', flashcardSchema);
 
-// Endpoint raiz
+
 app.get('/', async (req, res) => {
-  res.send('Olá mundo!!');
+    res.send("Olá mundo!!");
 });
 
-// Buscar todos os flashcards
+// Fetch all flashcards
 app.get('/flashcards', async (req, res) => {
   try {
     const flashcards = await Flashcard.find();
@@ -37,15 +36,15 @@ app.get('/flashcards', async (req, res) => {
   }
 });
 
-// Adicionar um novo flashcard
+// Add a new flashcard
 app.post('/flashcards', async (req, res) => {
-  const { word, imageUrl } = req.body; // Atualizado para imageUrl
+  const { word, iconUrl } = req.body;
   try {
-    const newFlashcard = new Flashcard({ word, imageUrl }); // Usar imageUrl aqui
+    const newFlashcard = new Flashcard({ word, iconUrl });
     await newFlashcard.save();
     res.status(201).json(newFlashcard);
   } catch (err) {
-    res.status(500).json({ error: 'Falha ao salvar flashcard' });
+    res.status(500).json({ error: 'Failed to save flashcard' });
   }
 });
 
