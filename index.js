@@ -2,6 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+});
+
+// User Model
+const User = mongoose.model('User', userSchema);
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -23,7 +32,24 @@ const Flashcard = mongoose.model('Flashcard', flashcardSchema);
 
 
 app.get('/', async (req, res) => {
-    res.send("Olá mundo!!");
+  res.send("Olá mundo!!");
+});
+
+// Register User
+app.post('/signup', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  try {
+    const newUser = new User({ name, email, password });
+    await newUser.save();
+    res.status(201).json({ message: 'User registered successfully', user: newUser });
+  } catch (error) {
+    if (error.code === 11000) {
+      res.status(400).json({ error: 'Email already exists' });
+    } else {
+      res.status(500).json({ error: 'Failed to register user' });
+    }
+  }
 });
 
 // Fetch all flashcards
