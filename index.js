@@ -1,11 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt'); // Import bcrypt
+const jwt = require('jsonwebtoken'); // Optional: for creating tokens
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: true }, // Store hashed password
 });
 
 // User Model
@@ -35,28 +37,56 @@ app.get('/', async (req, res) => {
   res.send("Olá mundo!!");
 });
 
-// Register User
-// Register User
+// Sign Up Endpoint
 app.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // Check if the user already exists
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'Email is already registered' });
     }
 
-    // If not, create a new user
-    const newUser = new User({ name, email, password });
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10); // Salt rounds = 10
+    const newUser = new User({ name, email, password: hashedPassword });
     await newUser.save();
-    res.status(201).json({ message: 'User registered successfully', user: newUser });
+
+    res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
-    console.error('Error during user registration:', error);
+    console.error('Error during sign-up:', error);
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
 
+
+// Login Endpoint
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    // Compare password with hashed password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    // Optional: Generate a JWT token
+    const token = jwt.sign({ id: user._id }, 'secret_key', { expiresIn: '1h' });
+
+    res.status(200).json({ message: 'Login successful', token });
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({ error: 'Failed to log in' });
+  }
+});
 
 // Fetch all flashcards
 app.get('/flashcards', async (req, res) => {
