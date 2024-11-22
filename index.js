@@ -49,7 +49,7 @@ app.post('/signup', async (req, res) => {
     }
 
     // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10); // Salt rounds = 10
+    const hashedPassword = await bcrypt.hash(password, 5); // Salt rounds = 10
     const newUser = new User({ name, email, password: hashedPassword });
     await newUser.save();
 
