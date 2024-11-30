@@ -119,7 +119,6 @@ const animalKeywords = [
   'giraffe', 'kangaroo', 'panda', 'parrot', 'snake', 'cow', 'sheep', 'goat', 'deer', 'fox'
   // Você pode adicionar mais animais aqui
 ];
-
 // Função para buscar ícones
 const fetchIcons = async (word) => {
   const response = await fetch(`https://api.iconify.design/search?query=${encodeURIComponent(word)}`);
