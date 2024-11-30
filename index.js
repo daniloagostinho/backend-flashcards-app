@@ -3,7 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt'); // Import bcrypt
 const jwt = require('jsonwebtoken'); // Optional: for creating tokens
-const axios = require('axios'); 
+const axios = require('axios');
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -110,43 +110,67 @@ app.post('/flashcards', async (req, res) => {
   }
 });
 
-// Novo endpoint para gerar flashcards por categoria
-app.post('/flashcards-gerados', async (req, res) => {
-  const { categorias } = req.body; // Recebe as categorias no corpo da requisição
+const fetch = require('node-fetch');
 
-  if (!categorias || !Array.isArray(categorias)) {
-    return res.status(400).json({ error: 'Por favor, forneça um array de categorias.' });
+// Função para buscar palavras relacionadas de uma categoria usando a API Datamuse
+const fetchSuggestions = async (categoria) => {
+  try {
+    const response = await fetch(`https://api.datamuse.com/words?rel_trg=${categoria}`);
+    const data = await response.json();
+
+    // Retorna as palavras relacionadas (limite de 10 palavras por categoria)
+    return data.slice(0, 10).map(item => item.word);
+  } catch (error) {
+    console.error('Erro ao buscar sugestões:', error);
+    return [];
   }
+};
+
+app.post('/flashcards-gerados', async (req, res) => {
+  const { categorias } = req.body;
 
   try {
-    const flashcardsGerados = [];
+    if (!categorias || categorias.length === 0) {
+      return res.status(400).json({ error: 'Por favor, forneça pelo menos uma categoria.' });
+    }
 
-    // Para cada categoria, buscamos ícones na API
-    for (const categoria of categorias) {
-      const response = await axios.get(`https://api.iconify.design/search?query=${encodeURIComponent(categoria)}`);
+    let flashcards = [];
 
-      if (response.data.icons && response.data.icons.length > 0) {
-        const iconName = response.data.icons[0]; // Pegamos o primeiro ícone encontrado
-        const iconUrl = `https://api.iconify.design/${iconName}.svg`;
+    // Para cada categoria, buscar sugestões de palavras-chave
+    for (let categoria of categorias) {
+      const suggestions = await fetchSuggestions(categoria);
 
-        // Criamos um flashcard para cada categoria
-        flashcardsGerados.push({
-          word: categoria,
-          iconUrl: iconUrl,
-        });
+      if (suggestions.length === 0) {
+        return res.status(400).json({ error: `Não foram encontradas sugestões para a categoria ${categoria}.` });
+      }
+
+      // Para cada sugestão, buscar ícones
+      for (let word of suggestions) {
+        const response = await fetch(`https://api.iconify.design/search?query=${encodeURIComponent(word)}`);
+        const data = await response.json();
+
+        if (data.icons && data.icons.length > 0) {
+          // Mapear os ícones encontrados para flashcards
+          const newFlashcards = data.icons.map(iconName => ({
+            word: word,
+            iconUrl: `https://api.iconify.design/${iconName}.svg`
+          }));
+          flashcards = flashcards.concat(newFlashcards);
+        }
       }
     }
 
-    // Salva os flashcards gerados no banco de dados
-    const savedFlashcards = await Flashcard.insertMany(flashcardsGerados);
+    if (flashcards.length === 0) {
+      return res.status(404).json({ error: 'Nenhum ícone encontrado para as categorias fornecidas.' });
+    }
 
-    // Retorna os flashcards gerados para o front-end
-    res.status(201).json(savedFlashcards);
+    res.json(flashcards);
   } catch (err) {
-    console.error('Erro ao gerar flashcards:', err);
-    res.status(500).json({ error: 'Erro ao gerar flashcards' });
+    console.error('Erro ao buscar flashcards:', err);
+    res.status(500).json({ error: 'Erro ao gerar flashcards.' });
   }
 });
+
 
 app.listen(5000, () => {
   console.log('Backend running on http://localhost:5000');
