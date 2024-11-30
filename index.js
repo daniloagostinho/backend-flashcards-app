@@ -119,16 +119,18 @@ const animalKeywords = [
   'giraffe', 'kangaroo', 'panda', 'parrot', 'snake', 'cow', 'sheep', 'goat', 'deer', 'fox'
   // Você pode adicionar mais animais aqui
 ];
+
 // Função para buscar ícones
 const fetchIcons = async (word) => {
   const response = await fetch(`https://api.iconify.design/search?query=${encodeURIComponent(word)}`);
   const data = await response.json();
 
+  // Garantir que estamos pegando apenas o primeiro ícone para cada animal
   if (data.icons && data.icons.length > 0) {
-    return data.icons.map(iconName => ({
+    return [{
       word: word,
-      iconUrl: `https://api.iconify.design/${iconName}.svg`
-    }));
+      iconUrl: `https://api.iconify.design/${data.icons[0]}.svg` // Pegando apenas o primeiro ícone
+    }];
   }
 
   return [];
@@ -143,17 +145,23 @@ app.post('/flashcards-gerados', async (req, res) => {
     }
 
     let flashcards = [];
+    let seenWords = new Set();  // Usar um Set para evitar duplicação de palavras
 
     // Para cada categoria, buscar sugestões de palavras-chave
     for (let categoria of categorias) {
       // Vamos pegar palavras fixas para "animals"
       if (categoria === 'animals') {
         for (let word of animalKeywords) {
+          // Se a palavra já foi processada, pula
+          if (seenWords.has(word)) continue;
+          
           const icons = await fetchIcons(word);
-          flashcards = flashcards.concat(icons);
+          if (icons.length > 0) {
+            flashcards = flashcards.concat(icons);
+            seenWords.add(word);  // Marca a palavra como já processada
+          }
         }
       } else {
-        // Caso você queira fazer outras categorias, pode adicionar o código aqui
         return res.status(400).json({ error: `Categoria '${categoria}' não é suportada ainda.` });
       }
     }
@@ -168,7 +176,6 @@ app.post('/flashcards-gerados', async (req, res) => {
     res.status(500).json({ error: 'Erro ao gerar flashcards.' });
   }
 });
-
 
 app.listen(5000, () => {
   console.log('Backend running on http://localhost:5000');
