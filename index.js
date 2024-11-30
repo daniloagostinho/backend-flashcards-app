@@ -1,9 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const OpenAI = require('openai'); // Importando o SDK da OpenAI
+const bcrypt = require('bcrypt'); // Import bcrypt
+const jwt = require('jsonwebtoken'); // Optional: for creating tokens
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -33,26 +32,6 @@ const flashcardSchema = new mongoose.Schema({
 // Create Flashcard Model
 const Flashcard = mongoose.model('Flashcard', flashcardSchema);
 
-// OpenAI client configuration
-const openai = new OpenAI({
-  apiKey: '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', // Sua chave da OpenAI aqui
-});
-
-// Função para gerar imagem usando a OpenAI DALL·E
-async function generateIconFromText(text) {
-  try {
-    const response = await openai.images.create({
-      prompt: text,
-      n: 1,
-      size: '1024x1024', // Tamanho da imagem
-    });
-
-    return response.data[0].url; // URL da imagem gerada
-  } catch (error) {
-    console.error('Erro ao gerar imagem:', error);
-    throw new Error('Erro ao gerar ícone');
-  }
-}
 
 app.get('/', async (req, res) => {
   res.send("Olá mundo!!");
@@ -80,6 +59,7 @@ app.post('/signup', async (req, res) => {
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
+
 
 // Login Endpoint
 app.post('/login', async (req, res) => {
@@ -118,14 +98,10 @@ app.get('/flashcards', async (req, res) => {
   }
 });
 
-// Add a new flashcard (modificado para usar a OpenAI)
+// Add a new flashcard
 app.post('/flashcards', async (req, res) => {
-  const { word } = req.body;
+  const { word, iconUrl } = req.body;
   try {
-    // Gerar o ícone (imagem) com base na palavra
-    const iconUrl = await generateIconFromText(word);
-
-    // Criar o flashcard
     const newFlashcard = new Flashcard({ word, iconUrl });
     await newFlashcard.save();
     res.status(201).json(newFlashcard);
