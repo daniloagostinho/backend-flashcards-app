@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt'); // Import bcrypt
 const jwt = require('jsonwebtoken'); // Optional: for creating tokens
+const axios = require('axios'); 
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -60,7 +61,6 @@ app.post('/signup', async (req, res) => {
   }
 });
 
-
 // Login Endpoint
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -107,6 +107,44 @@ app.post('/flashcards', async (req, res) => {
     res.status(201).json(newFlashcard);
   } catch (err) {
     res.status(500).json({ error: 'Failed to save flashcard' });
+  }
+});
+
+// Novo endpoint para gerar flashcards por categoria
+app.post('/flashcards-gerados', async (req, res) => {
+  const { categorias } = req.body; // Recebe as categorias no corpo da requisição
+
+  if (!categorias || !Array.isArray(categorias)) {
+    return res.status(400).json({ error: 'Por favor, forneça um array de categorias.' });
+  }
+
+  try {
+    const flashcardsGerados = [];
+
+    // Para cada categoria, buscamos ícones na API
+    for (const categoria of categorias) {
+      const response = await axios.get(`https://api.iconify.design/search?query=${encodeURIComponent(categoria)}`);
+
+      if (response.data.icons && response.data.icons.length > 0) {
+        const iconName = response.data.icons[0]; // Pegamos o primeiro ícone encontrado
+        const iconUrl = `https://api.iconify.design/${iconName}.svg`;
+
+        // Criamos um flashcard para cada categoria
+        flashcardsGerados.push({
+          word: categoria,
+          iconUrl: iconUrl,
+        });
+      }
+    }
+
+    // Salva os flashcards gerados no banco de dados
+    const savedFlashcards = await Flashcard.insertMany(flashcardsGerados);
+
+    // Retorna os flashcards gerados para o front-end
+    res.status(201).json(savedFlashcards);
+  } catch (err) {
+    console.error('Erro ao gerar flashcards:', err);
+    res.status(500).json({ error: 'Erro ao gerar flashcards' });
   }
 });
 
