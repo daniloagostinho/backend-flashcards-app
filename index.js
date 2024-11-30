@@ -110,30 +110,29 @@ app.post('/flashcards', async (req, res) => {
   }
 });
 
+
 const fetch = require('node-fetch');
 
-// Função para buscar palavras relacionadas de uma categoria usando a API Datamuse
-const fetchSuggestions = async (categoria) => {
-  try {
-    const response = await fetch(`https://api.datamuse.com/words?rel_trg=${categoria}`);
-    const data = await response.json();
+// Lista fixa de animais
+const animalKeywords = [
+  'cat', 'dog', 'lion', 'tiger', 'elephant', 'bear', 'zebra', 'horse', 'rabbit', 'monkey',
+  'giraffe', 'kangaroo', 'panda', 'parrot', 'snake', 'cow', 'sheep', 'goat', 'deer', 'fox'
+  // Você pode adicionar mais animais aqui
+];
 
-    // Filtra apenas as palavras que são relacionadas ao tema e limitamos a 10 sugestões
-    return data.slice(0, 10).map(item => item.word).filter(word => isValidAnimal(word));
-  } catch (error) {
-    console.error('Erro ao buscar sugestões:', error);
-    return [];
+// Função para buscar ícones
+const fetchIcons = async (word) => {
+  const response = await fetch(`https://api.iconify.design/search?query=${encodeURIComponent(word)}`);
+  const data = await response.json();
+
+  if (data.icons && data.icons.length > 0) {
+    return data.icons.map(iconName => ({
+      word: word,
+      iconUrl: `https://api.iconify.design/${iconName}.svg`
+    }));
   }
-};
 
-// Função para validar se a palavra é realmente um nome de animal
-const isValidAnimal = (word) => {
-  const validAnimals = [
-    'cat', 'dog', 'lion', 'tiger', 'elephant', 'bear', 'zebra', 'horse', 'rabbit', 'monkey', 'giraffe', 'kangaroo', 'panda', 'parrot', 'snake'
-    // Adicione mais animais conforme necessário
-  ];
-
-  return validAnimals.includes(word.toLowerCase());
+  return [];
 };
 
 app.post('/flashcards-gerados', async (req, res) => {
@@ -148,25 +147,15 @@ app.post('/flashcards-gerados', async (req, res) => {
 
     // Para cada categoria, buscar sugestões de palavras-chave
     for (let categoria of categorias) {
-      const suggestions = await fetchSuggestions(categoria);
-
-      if (suggestions.length === 0) {
-        return res.status(400).json({ error: `Não foram encontradas sugestões para a categoria ${categoria}.` });
-      }
-
-      // Para cada sugestão, buscar ícones
-      for (let word of suggestions) {
-        const response = await fetch(`https://api.iconify.design/search?query=${encodeURIComponent(word)}`);
-        const data = await response.json();
-
-        if (data.icons && data.icons.length > 0) {
-          // Mapear os ícones encontrados para flashcards
-          const newFlashcards = data.icons.map(iconName => ({
-            word: word,
-            iconUrl: `https://api.iconify.design/${iconName}.svg`
-          }));
-          flashcards = flashcards.concat(newFlashcards);
+      // Vamos pegar palavras fixas para "animals"
+      if (categoria === 'animals') {
+        for (let word of animalKeywords) {
+          const icons = await fetchIcons(word);
+          flashcards = flashcards.concat(icons);
         }
+      } else {
+        // Caso você queira fazer outras categorias, pode adicionar o código aqui
+        return res.status(400).json({ error: `Categoria '${categoria}' não é suportada ainda.` });
       }
     }
 
