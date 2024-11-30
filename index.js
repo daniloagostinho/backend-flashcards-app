@@ -118,12 +118,22 @@ const fetchSuggestions = async (categoria) => {
     const response = await fetch(`https://api.datamuse.com/words?rel_trg=${categoria}`);
     const data = await response.json();
 
-    // Retorna as palavras relacionadas (limite de 10 palavras por categoria)
-    return data.slice(0, 10).map(item => item.word);
+    // Filtra apenas as palavras que são relacionadas ao tema e limitamos a 10 sugestões
+    return data.slice(0, 10).map(item => item.word).filter(word => isValidAnimal(word));
   } catch (error) {
     console.error('Erro ao buscar sugestões:', error);
     return [];
   }
+};
+
+// Função para validar se a palavra é realmente um nome de animal
+const isValidAnimal = (word) => {
+  const validAnimals = [
+    'cat', 'dog', 'lion', 'tiger', 'elephant', 'bear', 'zebra', 'horse', 'rabbit', 'monkey', 'giraffe', 'kangaroo', 'panda', 'parrot', 'snake'
+    // Adicione mais animais conforme necessário
+  ];
+
+  return validAnimals.includes(word.toLowerCase());
 };
 
 app.post('/flashcards-gerados', async (req, res) => {
