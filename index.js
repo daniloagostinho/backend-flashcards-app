@@ -164,6 +164,7 @@ app.post('/flashcards-gerados', async (req, res) => {
           if (seenWords.has(word)) continue;
 
           const icons = await fetchIcons(word);
+          
           if (icons.length > 0) {
             flashcards = flashcards.concat(icons);
             seenWords.add(word);
