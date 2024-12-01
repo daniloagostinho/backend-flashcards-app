@@ -110,7 +110,6 @@ app.post('/flashcards', async (req, res) => {
   }
 });
 
-
 const fetch = require('node-fetch');
 
 // Lista fixa de animais
@@ -118,6 +117,16 @@ const animalKeywords = [
   'cat', 'dog', 'lion', 'tiger', 'elephant', 'bear', 'zebra', 'horse', 'rabbit', 'monkey',
   'giraffe', 'kangaroo', 'panda', 'parrot', 'snake', 'cow', 'sheep', 'goat', 'deer', 'fox'
   // Você pode adicionar mais animais aqui
+];
+
+const familyKeywords = [
+  'parents',
+  'siblings',
+  'children',
+  'spouse',
+  'extended family',
+  'family traditions',
+  'family gatherings'
 ];
 
 // Função para buscar ícones
@@ -145,20 +154,30 @@ app.post('/flashcards-gerados', async (req, res) => {
     }
 
     let flashcards = [];
-    let seenWords = new Set();  // Usar um Set para evitar duplicação de palavras
+    let seenWords = new Set(); // Usar um Set para evitar duplicação de palavras
 
     // Para cada categoria, buscar sugestões de palavras-chave
     for (let categoria of categorias) {
-      // Vamos pegar palavras fixas para "animals"
       if (categoria === 'animals') {
+        // Processar palavras-chave para animais
         for (let word of animalKeywords) {
-          // Se a palavra já foi processada, pula
           if (seenWords.has(word)) continue;
-          
+
           const icons = await fetchIcons(word);
           if (icons.length > 0) {
             flashcards = flashcards.concat(icons);
-            seenWords.add(word);  // Marca a palavra como já processada
+            seenWords.add(word);
+          }
+        }
+      } else if (categoria === 'family') {
+        // Processar palavras-chave para família
+        for (let word of familyKeywords) {
+          if (seenWords.has(word)) continue;
+
+          const icons = await fetchIcons(word);
+          if (icons.length > 0) {
+            flashcards = flashcards.concat(icons);
+            seenWords.add(word);
           }
         }
       } else {
